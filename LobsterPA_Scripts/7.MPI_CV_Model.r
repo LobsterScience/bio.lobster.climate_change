@@ -35,20 +35,20 @@ survey$W = ceiling(yday(survey$DATE)/366*25)
 mi= readRDS(file=file.path(project.datadirectory('bio.lobster'),'analysis','ClimateModelling','tempCatchability.rds'))
 
 mi = mi[,c('Temperature','predicted')]
-names(mi) = c('CanBTr','OFFSETcorr')
-mi$OFFSETcorr = mi$OFFSETcorr * (1/mi$OFFSETcorr[which(mi$CanBT==14)]) # 17m is at 14C, so go up or down from there
+names(mi) = c('MPIBTr','OFFSETcorr')
+mi$OFFSETcorr = mi$OFFSETcorr * (1/mi$OFFSETcorr[which(mi$MPIBT==14)]) # 17m is at 14C, so go up or down from there
 # 17m is at 14C, so go up or down from there
-survey$CanBTr = round(survey$CanBT*2)/2
+survey$MPIBTr = round(survey$MPIBT*2)/2
 survey = dplyr::full_join(survey,mi)
-survey$OFFSETcorr[which(survey$CanBTr< -.7)] <- min(mi$OFFSETcorr)
-survey$OFFSETcorr[which(survey$CanBTr> 17)] <- max(mi$OFFSETcorr)
+survey$OFFSETcorr[which(survey$MPIBTr< -.7)] <- min(mi$OFFSETcorr)
+survey$OFFSETcorr[which(survey$MPIBTr> 17)] <- max(mi$OFFSETcorr)
 
 i = which(survey$OFFSET_METRIC == 'Number of traps')
 survey$OFFSET[i] = survey$OFFSET[i] * pi*(.014^2) * survey$OFFSETcorr[i]
 
 survey$LO = log(survey$OFFSET)
 survey = subset(survey,OFFSET>0.00001 & OFFSET< 0.12)
-survey$BT = survey$CanBT
+survey$BT = survey$MPIBT
 survey = subset(survey,!is.na(BT))
 survey$pa = ifelse(survey$Berried>0,1,0)
 i = which(survey$SOURCE=='ILTS_ITQ' & survey$WEIGHT_KG==0 & is.na(survey$Berried))
@@ -97,7 +97,7 @@ data = as_tibble(survey)
 
 data$IDS = "I"
 data = cv_SpaceTimeFolds(data,idCol = 'IDS',nfolds=k_folds)
-source('C:/Users/cooka/Documents/git/bio.lobster.climate_change/LobsterPA_Scripts/setUpCV_Table.r')
+source('~/git/bio.lobster.climate_change/LobsterPA_Scripts/setUpCV_Table.r')
 
 options(future.globals.maxSize = 2*1024^3) #2GB
 models=c('m1','m2','m3')
@@ -137,6 +137,7 @@ m = sdmTMB(pa~
   m1_cv <-m_cv
   
 }
+saveRDS(mod.select,'MPIModSel.rds')
 
 if ("m2" %in% models) {
   
@@ -174,7 +175,7 @@ m = sdmTMB(pa~
   m2_cv <-m_cv
   
 }
-saveRDS(mod.select,'CanModSel.rds')
+saveRDS(mod.select,'MPIModSel.rds')
 
 
 if ("m3" %in% models) {
@@ -214,4 +215,5 @@ m = sdmTMB(pa~
   
 }
 
-saveRDS(mod.select,'CanModSel.rds')
+saveRDS(mod.select,'MPIModSel.rds')
+
